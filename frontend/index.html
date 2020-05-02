@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <link rel="icon" href="https://www.asmag.com/upload/pic/case/47060.039625.jpg" />
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+        <title> Face Detection </title>
+        <style>
+            h1 {
+                text-align: center;
+                padding-top: 0px;
+            }
+            .img {
+                background-image: url("https://www.webdesignerdepot.com/cdn-origin/uploads/2018/04/featured_nlp.jpg");
+                background-repeat: no-repeat;
+                background-attachment: fixed;
+                background-size: 100% 100%;
+            }
+            .container {
+                width: 100%;
+                height: 100%;
+            }
+            .toppane {
+                height: 20%;
+                width: 100%;
+            }
+            .leftpane {
+                width: 40%;
+                padding-top: 2%;
+                float: left;
+                height: auto;
+                border-collapse: collapse;
+            }
+            .middlepane {
+                width: 15%;
+                height: auto;
+                padding-top: 15%;
+                padding-left: 1%;
+                float: left;
+                border-collapse: collapse;
+            }
+            .rightpane {
+                width: 40%;
+                height: auto;
+                padding-top: 2%;
+                position: relative;
+                margin-left: 56%;
+                border-collapse: collapse;
+            }
+            #detected-image {
+                display: none;
+            }
+            .button {
+                opacity: 0.9;
+                border: none;
+                color: white;
+                width: 160px;
+                cursor: pointer;
+                font-size: 13px;
+                margin: 4px 2px;
+                transition: 0.3s;
+                padding: 12px 30px;
+                text-align: center;
+                border-radius: 15px;
+                display: inline-block;
+                text-decoration: none;
+                background-color: #f4511e;
+            }
+            #pageloader {
+                display: none;
+                position: fixed;
+                cursor: wait;
+                z-index: +100 !important;
+            }
+            #pageloader img {
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                width: 70%;
+                height: 100%;
+                position: fixed;
+                padding-left: 15%;
+                padding-right: 15%;
+                text-align: center;
+                background-repeat: no-repeat !important;
+                background-color: rgba(255, 255, 255, 0.7);
+            }
+        </style>
+    </head>
+
+    <body align="center" class="img">
+        
+        <div id="pageloader">
+            <img src="https://flevix.com/wp-content/uploads/2019/07/Bubble-Preloader-1.gif" alt="processing..."/>
+        </div>
+        
+        <div class="container">
+
+            <div class="toppane"> <h1> Face Detection and Face Count </h1> </div>
+
+            <div class="leftpane" align="center">
+                <video id="video" width="640" height="480" autoplay></video>
+            </div>
+
+            <div class="middlepane" align="center">
+                <button id="snap" class="button">Snap Photo</button>
+            </div>
+
+            <div class="rightpane" align="center" id="snapped-image">
+                <canvas id="canvas" width="640" height="480"></canvas>
+            </div>
+
+            <div class="rightpane" align="center" id="detected-image">
+                <span id="mycanvas"> </span>
+                <span id="total_persons"> </span>
+            </div>
+
+        </div>
+        <script>
+            var video = document.getElementById('video');
+            if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
+                    video.srcObject = stream;
+                    video.play();
+                });
+            }
+            var canvas = document.getElementById('canvas');
+            var context = canvas.getContext('2d');
+            var video = document.getElementById('video');
+
+            $("#snap").on("click", function() {
+                var ip = "";
+                $.getJSON("https://api.ipify.org/?format=json", function(data) {
+                    ip = data.ip;
+                    context.drawImage(video, 0, 0, 640, 480);
+                    $("#pageloader").fadeIn("slow");
+                    $("#snapped-image").show();
+                    $("#detected-image").hide();
+                    var imgData = canvas.toDataURL("image/png");
+                    imgData = imgData.replace(/^data:image\/(png|jpg);base64,/, "");
+
+                    $.ajax({
+                        type: 'POST',
+                        url: '/submit',
+                        data: '{"file": "'+imgData+'", "filename": "'+ip+'"}',
+                        contentType: "application/json",
+                        dataType: 'json',
+                        cache: false,
+                        success: function(data) {
+                            $("#snapped-image").hide();
+                            $("#detected-image").show();
+                            $("#mycanvas").html("<img src='/submit/"+data.imagename+"' />");
+                            $("#total_persons").html("<h2> Total number of persons in snapped image = " + data.total_persons + "</h2>");
+                            $("#pageloader").fadeOut("slow");
+                        }
+                    });
+                });
+            });
+        </script>
+    </body>
+</html>
